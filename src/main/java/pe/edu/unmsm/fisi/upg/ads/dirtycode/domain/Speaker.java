@@ -78,7 +78,8 @@ public class Speaker {
 
 	private boolean isApproved() {
 		boolean result = true;
-		for (Session session : sessions) {
+		
+		for (Session session : sessions) {		
 			for (String technology : oldTechnologies) {
 				if (session.getTitle().contains(technology) || session.getDescription().contains(technology)) {
 					session.setApproved(false);
