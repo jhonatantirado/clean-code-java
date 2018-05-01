@@ -40,18 +40,18 @@ public class Speaker {
 			throw new IllegalArgumentException("Can't register speaker with no sessions to present.");
 
 		Integer speakerId = null;
-		boolean good = false;
-		boolean approved = false;
+		boolean isGood = false;
+		boolean isApproved = false;
 
-		good = isGood();
+		isGood = meetsMinimunRequirements();
 
-		if (!good)
+		if (!isGood)
 			throw new SpeakerDoesntMeetRequirementsException(
 					"Speaker doesn't meet our abitrary and capricious standards.");
 
-		approved = isApproved();
+		isApproved = hasSessionApproved();
 
-		if (!approved)
+		if (!isApproved)
 			throw new NoSessionsApprovedException("No sessions approved.");
 
 		calculateRegistrationFee();
@@ -65,18 +65,18 @@ public class Speaker {
 		return speakerId;
 	}
 
-	private boolean isGood() {
-		boolean good;
+	private boolean meetsMinimunRequirements() {
+		boolean result;
 		String[] splitted = this.email.split("@");
 		String emailDomain = splitted[splitted.length - 1];
-		good = ((this.yearsOfExperience > requiredYearsOfExperience || this.hasBlog
+		result = ((this.yearsOfExperience > requiredYearsOfExperience || this.hasBlog
 				|| this.certifications.size() > requiredCertifications || employers.contains(this.employer)
 				|| (!emailDomains.contains(emailDomain) && browser.getName() != WebBrowser.BrowserName.InternetExplorer
 						&& browser.getMajorVersion() >= minRequiredBrowserVersion)));
-		return good;
+		return result;
 	}
 
-	private boolean isApproved() {
+	private boolean hasSessionApproved() {
 		boolean result = true;
 		
 		for (Session session : sessions) {		
