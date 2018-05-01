@@ -10,7 +10,7 @@ public class Speaker {
 	private String firstName;
 	private String lastName;
 	private String email;
-	private int exp;
+	private int yearsOfExperience;
 	private boolean hasBlog;
 	private String blogURL;
 	private WebBrowser browser;
@@ -19,109 +19,94 @@ public class Speaker {
 	private int registrationFee;
 	private List<Session> sessions;
 
+	private int requiredCertifications = 3;
+	private int requiredYearsOfExperience = 10;
+	private int minRequiredBrowserVersion = 9;
+
+	String[] oldTechnologies = new String[] { "Cobol", "Punch Cards", "Commodore", "VBScript" };
+	List<String> emailDomains = Arrays.asList("aol.com", "hotmail.com", "prodigy.com", "compuserve.com");
+	List<String> employers = Arrays.asList("Pluralsight", "Microsoft", "Google", "Fog Creek Software", "37Signals",
+			"Telerik");
+
 	public Integer register(IRepository repository) throws Exception {
+
+		if (this.firstName.isEmpty())
+			throw new IllegalArgumentException("First Name is required");
+		if (this.lastName.isEmpty())
+			throw new IllegalArgumentException("Last name is required.");
+		if (this.email.isEmpty())
+			throw new IllegalArgumentException("Email is required.");
+		if (this.sessions.size() == 0)
+			throw new IllegalArgumentException("Can't register speaker with no sessions to present.");
+
 		Integer speakerId = null;
 		boolean good = false;
-		boolean appr = false;
-		//String[] nt = new String[] { "Microservices", "Node.js", "CouchDB", "KendoUI", "Dapper", "Angular2" };
-		String[] ot = new String[] { "Cobol", "Punch Cards", "Commodore", "VBScript" };
-		
-		//DEFECT #5274 DA 12/10/2012
-		//We weren't filtering out the prodigy domain so I added it.
-		List<String> domains = Arrays.asList("aol.com", "hotmail.com", "prodigy.com", "compuserve.com");
-		
-		if (!this.firstName.isEmpty()) {
-			if (!this.lastName.isEmpty()) {
-				if (!this.email.isEmpty()) {
-					//put list of employers in array
-					List<String> emps = Arrays.asList("Pluralsight", "Microsoft", "Google", "Fog Creek Software", "37Signals", "Telerik");
-					
-					//DFCT #838 Jimmy
-					//We're now requiring 3 certifications so I changed the hard coded number. Boy, programming is hard.
-					good = ((this.exp > 10 || this.hasBlog || this.certifications.size() > 3 || emps.contains(this.employer)));
-					
-					if (!good) {
-						//need to get just the domain from the email
-						String[] splitted = this.email.split("@");
-						String emailDomain = splitted[splitted.length - 1];
+		boolean approved = false;
 
-						if (!domains.contains(emailDomain) && (!(browser.getName() == WebBrowser.BrowserName.InternetExplorer && browser.getMajorVersion() < 9)))
-						{
-							good = true;
-						}
-					}
-					
-					if (good) {
-						//DEFECT #5013 CO 1/12/2012
-						//We weren't requiring at least one session
-						if (this.sessions.size() != 0) {
-							for (Session session : sessions) {
-								//for (String tech : nt) {
-								//    if (session.getTitle().contains(tech) {
-								//        session.setApproved(true);
-								//        break;
-								//    }
-								//}
-								for (String tech : ot) {
-									if (session.getTitle().contains(tech) || session.getDescription().contains(tech)) {
-										session.setApproved(false);
-										break;
-									} else {
-										session.setApproved(true);
-										appr = true;
-									}
-								}
-								
-							}
-						} else {
-							throw new IllegalArgumentException("Can't register speaker with no sessions to present.");
-						}
-						
-						if (appr) {
-							//if we got this far, the speaker is approved
-							//let's go ahead and register him/her now.
-							//First, let's calculate the registration fee.
-							//More experienced speakers pay a lower fee.
-							if (this.exp <= 1) {
-								this.registrationFee = 500;
-							}
-							else if (exp >= 2 && exp <= 3) {
-								this.registrationFee = 250;
-							}
-							else if (exp >= 4 && exp <= 5) {
-								this.registrationFee = 100;
-							}
-							else if (exp >= 6 && exp <= 9) {
-								this.registrationFee = 50;
-							}
-							else {
-								this.registrationFee = 0;
-							}
-							
-							//Now, save the speaker and sessions to the db.
-							try {
-								speakerId = repository.saveSpeaker(this);
-							} catch (Exception e) {
-								//in case the db call fails 
-							}
-						} else {
-							throw new NoSessionsApprovedException("No sessions approved.");
-						}
-					} else {
-						throw new SpeakerDoesntMeetRequirementsException("Speaker doesn't meet our abitrary and capricious standards.");
-					}
-				} else {
-					throw new IllegalArgumentException("Email is required.");
-				}				
-			} else {
-				throw new IllegalArgumentException("Last name is required.");
-			}			
-		} else {
-			throw new IllegalArgumentException("First Name is required");
+		good = isGood();
+
+		if (!good)
+			throw new SpeakerDoesntMeetRequirementsException(
+					"Speaker doesn't meet our abitrary and capricious standards.");
+
+		approved = isApproved();
+
+		if (!approved)
+			throw new NoSessionsApprovedException("No sessions approved.");
+
+		calculateRegistrationFee();
+
+		try {
+			speakerId = repository.saveSpeaker(this);
+		} catch (Exception e) {
+			throw e;
 		}
-			
-		//if we got this far, the speaker is registered.
+
 		return speakerId;
+	}
+
+	private boolean isGood() {
+		boolean good;
+		String[] splitted = this.email.split("@");
+		String emailDomain = splitted[splitted.length - 1];
+		good = ((this.yearsOfExperience > requiredYearsOfExperience || this.hasBlog
+				|| this.certifications.size() > requiredCertifications || employers.contains(this.employer)
+				|| (!emailDomains.contains(emailDomain) && browser.getName() != WebBrowser.BrowserName.InternetExplorer
+						&& browser.getMajorVersion() >= minRequiredBrowserVersion)));
+		return good;
+	}
+
+	private boolean isApproved() {
+		boolean result = true;
+		for (Session session : sessions) {
+			
+			
+			
+			for (String technology : oldTechnologies) {
+				if (session.getTitle().contains(technology) || session.getDescription().contains(technology)) {
+					session.setApproved(false);
+					result = false;
+					break;
+				} else {
+					session.setApproved(true);
+				}
+			}
+		}
+		return result;
+	}
+
+	private void calculateRegistrationFee() {
+		if (this.yearsOfExperience <= 1) {
+			this.registrationFee = 500;
+		} else if (yearsOfExperience >= 2 && yearsOfExperience <= 3) {
+			this.registrationFee = 250;
+		} else if (yearsOfExperience >= 4 && yearsOfExperience <= 5) {
+			this.registrationFee = 100;
+		} else if (yearsOfExperience >= 6 && yearsOfExperience <= 9) {
+			this.registrationFee = 50;
+		} else {
+			this.registrationFee = 0;
+		}
 	}
 
 	public List<Session> getSessions() {
@@ -157,11 +142,11 @@ public class Speaker {
 	}
 
 	public int getExp() {
-		return exp;
+		return yearsOfExperience;
 	}
 
 	public void setExp(int exp) {
-		this.exp = exp;
+		this.yearsOfExperience = exp;
 	}
 
 	public boolean isHasBlog() {
