@@ -19,15 +19,6 @@ public class Speaker {
 	private int registrationFee;
 	private List<Session> sessions;
 
-	private int requiredCertifications = 3;
-	private int requiredYearsOfExperience = 10;
-	private int minRequiredBrowserVersion = 9;
-
-	String[] oldTechnologies = new String[] { "Cobol", "Punch Cards", "Commodore", "VBScript" };
-	List<String> emailDomains = Arrays.asList("aol.com", "hotmail.com", "prodigy.com", "compuserve.com");
-	List<String> employers = Arrays.asList("Pluralsight", "Microsoft", "Google", "Fog Creek Software", "37Signals",
-			"Telerik");
-
 	public Integer register(IRepository repository) throws Exception {
 
 		if (this.firstName.isEmpty())
@@ -54,7 +45,7 @@ public class Speaker {
 		if (!isApproved)
 			throw new NoSessionsApprovedException("No sessions approved.");
 
-		calculateRegistrationFee();
+		this.registrationFee = repository.calculateRegistrationFee(this.yearsOfExperience);
 
 		try {
 			speakerId = repository.saveSpeaker(this);
@@ -67,6 +58,12 @@ public class Speaker {
 
 	private boolean meetsMinimunRequirements() {
 		boolean result;
+		int requiredCertifications = 3;
+		int requiredYearsOfExperience = 10;
+		int minRequiredBrowserVersion = 9;
+		List<String> emailDomains = Arrays.asList("aol.com", "hotmail.com", "prodigy.com", "compuserve.com");
+		List<String> employers = Arrays.asList("Pluralsight", "Microsoft", "Google", "Fog Creek Software", "37Signals",
+				"Telerik");
 		String[] splitted = this.email.split("@");
 		String emailDomain = splitted[splitted.length - 1];
 		result = ((this.yearsOfExperience > requiredYearsOfExperience || this.hasBlog
@@ -77,8 +74,8 @@ public class Speaker {
 	}
 
 	private boolean hasSessionApproved() {
+		String[] oldTechnologies = new String[] { "Cobol", "Punch Cards", "Commodore", "VBScript" };
 		boolean result = true;
-		
 		for (Session session : sessions) {		
 			for (String technology : oldTechnologies) {
 				if (session.getTitle().contains(technology) || session.getDescription().contains(technology)) {
@@ -91,20 +88,6 @@ public class Speaker {
 			}
 		}
 		return result;
-	}
-
-	private void calculateRegistrationFee() {
-		if (this.yearsOfExperience <= 1) {
-			this.registrationFee = 500;
-		} else if (yearsOfExperience >= 2 && yearsOfExperience <= 3) {
-			this.registrationFee = 250;
-		} else if (yearsOfExperience >= 4 && yearsOfExperience <= 5) {
-			this.registrationFee = 100;
-		} else if (yearsOfExperience >= 6 && yearsOfExperience <= 9) {
-			this.registrationFee = 50;
-		} else {
-			this.registrationFee = 0;
-		}
 	}
 
 	public List<Session> getSessions() {
